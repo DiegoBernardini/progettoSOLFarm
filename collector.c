@@ -170,7 +170,7 @@ void leggi(){
             }
             // messaggio->value = sommatoria;
 
-            // printf("inserisco nella lista ordinata %ld \t %s \n", sommatoria, nomeFile);
+            // fprintf(stdout, "inserisco nella lista ordinata %ld \t %s \n", sommatoria, nomeFile);
             // inserisciOrdina(&orderedList, sommatoria, messaggio->fileName);
             inserisciOrdina(&orderedList, sommatoria, nomeFile);
             // stampaListaF(orderedList);

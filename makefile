@@ -16,7 +16,9 @@ LIBS            = -pthread
 EXE 		= farm
 
 # aggiungere qui altri targets
-TARGETS		= main
+# TARGETS		= main
+TARGETS		= farm generafile
+
 
 #phony target
 .PHONY: all clean cleanall test
@@ -32,6 +34,9 @@ TARGETS		= main
 $(EXE): cmdLineParser.o collector.o list.o main.o master.o threadpool.o
 	$(CC) $(CFLAGS) $(INCLUDES) $^ -o $(EXE) $(LDFLAGS) $(LIBS)
 
+generafile: ./generafile.c
+	$(CC) $(CFLAGS) -o $@ $^	
+
 all		: $(TARGETS)
 
 clean 	:
@@ -43,11 +48,13 @@ clean 	:
 cleanall	: clean
 	rm -f *.o *~ *.a ./farm.sck  
 
-test: farm
-	@valgrind --leak-check=full --track-origins=yes ./$(EXE) -d ./dat -n 3 -q 5
-	make clean
+# test: farm
+# 	@valgrind --leak-check=full --track-origins=yes ./$(EXE) -d ./dat -n 3 -q 5
+# 	make clean
 # 	@valgrind --leak-check=full ./$(EXE) -d ./dat -n 3
 # 	./$(EXE) -d ./dat -n 3
 # 	@ps -A -ostat,pid,ppid | grep Z 
 
+test: generafile farm
+	./test.sh
 

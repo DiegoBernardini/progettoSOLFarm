@@ -90,9 +90,9 @@ lista inserisciTestaLista(lista root, char* stringa){
 	return t;
 }
 
-int longcmp(long a, long b){
-	return b-a; 	//crescente
-	// return a-b;		//decrescente
+long longcmp(long a, long b){
+	// return b-a; 	//crescente
+	return a-b;		//decrescente
 }
 
 void inserisciOrdina(listaF *head, long value, char* stringa){
@@ -109,7 +109,8 @@ void inserisciOrdina(listaF *head, long value, char* stringa){
 		strncpy(new->path, stringa, lenght);
 	//nuovo nodo creato
 
-	while(corr != NULL && longcmp(corr->result, new->result)>1){
+
+	while(corr != NULL && longcmp(corr->result, new->result)<0){
 		prec = corr;
 		corr = corr-> next;
 	}
@@ -135,7 +136,7 @@ void stampaListaF(listaF l){
 		// printf("\n");
 	}
 	// printf("->NULL\n");
-	fprintf(stdout, "-----------------------\n");
+	// fprintf(stdout, "-----------------------\n");
 
 }
 

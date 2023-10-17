@@ -55,7 +55,7 @@ int myConnect(int clientSocket, const struct sockaddr* sa_server, socklen_t addr
     while((errno = 0), (connect(clientSocket, sa_server, addrlen)) == -1){
     	if(errno ==  ENOENT || errno == EAGAIN || errno == EINTR || (errno == ECONNREFUSED && (attempt--) != 0)){
     		// attempt--;
-    		printf("'connect' failed, %d tentativi rimanenti, errno=%d\n", attempt, errno);
+    		// printf("'connect' failed, %d tentativi rimanenti, errno=%d\n", attempt, errno);
     		sleep(1);
     	}
     	else return -1;
@@ -74,7 +74,7 @@ void pushList(lista *listaFileBinari){
             exit(EXIT_FAILURE);
         }
         
-        // nanosleep(&(pool->delay), NULL); //aspetto
+        nanosleep(&(pool->delay), NULL); //aspetto
         // sleep(1);
 
         //elimino dalla lista il file appena processato 

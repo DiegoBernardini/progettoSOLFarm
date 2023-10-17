@@ -45,12 +45,16 @@ char* cwd() {
 	return buf;
 }//end cwd
 
+/*funzione che va a visitare ricorsivamente una cartella
+* @nomedir: nome della directory che si vuol visitare
+* @lista_file: elenco dei file regolari ottenuti a partire dalla cartella nomedir
+*/ 
+void exploreDir(const char nomedir[], lista *lista_file, char* pathRelativo) {
+	// printf("sono appena entrato e pathrelativo =%s\n", pathRelativo );
 
-void exploreDir(const char nomedir[], lista *lista_file) {
     struct stat statbuf;
     int r;
-    SYSCALL_EXIT(stat,r,stat(nomedir,&statbuf),"Facendo stat del nome %s: errno=%d\n",
-	    nomedir, errno);
+    SYSCALL_EXIT(stat,r,stat(nomedir,&statbuf),"Facendo stat del nome %s: errno=%d\n", nomedir, errno);
 
     DIR * dir;
     // fprintf(stdout, "-----------------------\n");
@@ -64,9 +68,11 @@ void exploreDir(const char nomedir[], lista *lista_file) {
     struct dirent *file;
    	//lista l=NULL;
     
-	while((errno=0, file =readdir(dir)) != NULL) {
+	while((errno=0, file = readdir(dir)) != NULL) {
 	    struct stat statbuf;
-	    char filename[LUNGHEZZA_STRINGHE]; 
+	    char filename[LUNGHEZZA_STRINGHE];//array in cui memorizzo il path assoluto dei file 
+	    char buf[LUNGHEZZA_STRINGHE]; //array in cui vado a memorizzare il path relativo dei file che incontro a partire dal nome della directory passata come argomento nella cmd
+
 	    int len1 = strlen(nomedir);
 	    int len2 = strlen(file->d_name);
 	    if ((len1+len2+2)>LUNGHEZZA_STRINGHE) {  //si assume che non succeda
@@ -74,9 +80,19 @@ void exploreDir(const char nomedir[], lista *lista_file) {
 			exit(EXIT_FAILURE);
 	    }
 
+	    //creo manualmente il path assoluto
 	    strncpy(filename,nomedir,      LUNGHEZZA_STRINGHE-1);
 	    strncat(filename,"/",          LUNGHEZZA_STRINGHE-1);
 	    strncat(filename,file->d_name, LUNGHEZZA_STRINGHE-1);
+
+	    // printf("FILENAME APPENA CREATO =%s\n", filename );
+
+	    // creo manualmente il path relativo
+	    strncpy(buf, pathRelativo, LUNGHEZZA_STRINGHE-1);
+		strncat(buf, "/",          LUNGHEZZA_STRINGHE-1);
+	    strncat(buf, file->d_name, LUNGHEZZA_STRINGHE-1);
+
+	    // printf("PATHRELATIVO APPENA CREATO =%s\n", buf);
 
 	    if (stat(filename, &statbuf)==-1) {
 			perror("eseguendo la stat");
@@ -85,13 +101,22 @@ void exploreDir(const char nomedir[], lista *lista_file) {
 	    }
 	    //se e' una directory ci entro 
 	    if(S_ISDIR(statbuf.st_mode)) {
-			if ( !isdot(filename) ) exploreDir(filename, lista_file);
+			// if ( !isdot(filename) ) exploreDir(filename, lista_file);
+			if ( !isdot(filename) ) exploreDir(filename, lista_file, buf);
+
 	    }
-	    //altri
+	    // se e' un file regolare
 	    else if(S_ISREG(statbuf.st_mode)){
+	    	/*le righe seguenti sono state commentate per superare i test, 
+	    	* dato che facevano uso del path assoluto dei file
+	    	*/
+	    	// *lista_file = inserisciTestaLista(*lista_file, filename);
 	    	//inserisciCodaLista(lista_file, filename);
-	    	*lista_file = inserisciTestaLista(*lista_file, filename);
 			//listaOrdinata(lista_file, filename);
+
+	    	// printf("FILE REGOLARE: filename= %s, file->d_name=%s\n, pathRelativo=%s\n", filename, file->d_name, pathRelativo);
+	    	// printf("STO PER INSERIRE NELLA LISTA %s\n", buf );
+	    	*lista_file = inserisciTestaLista(*lista_file, buf);
 		}
 	}
 	if (errno != 0) perror("readdir");//TODO gestione errore?
@@ -130,8 +155,10 @@ int cmdParse(int argc, char* argv[], flag* options){
 			}
 			char *new_cwd = cwd();
 			//vado alla nuova cartella
-			// fprintf(stdout, "cwd dopo il chdir(sempre nel cmdParse):%s\n\n", new_cwd);
-			exploreDir(new_cwd, &(options->l));
+			// printf("new_cwd=%s now=%s optarg=%s\n", new_cwd, now, optarg);
+
+			exploreDir(new_cwd, &(options->l), optarg);//CON PATH ASSOLUTO
+
 			free(new_cwd);  
 			// stampaLista(options->l);
 			
@@ -189,12 +216,18 @@ int cmdParse(int argc, char* argv[], flag* options){
 			perror("eseguendo la stat");
 			print_error("Errore nel file %s (non verra' considerato)\n", argv[i]);
 	    }else if(S_ISREG(statbuf.st_mode)){
-	  	  	strncat(path,"/",          LUNGHEZZA_STRINGHE-1);
-	  		strncat(path, argv[i],     LUNGHEZZA_STRINGHE-1);
+	    	/*le righe successive sono state commentate per superare i test 
+	    	 *in quanto sfruttavano il percorso assoluto del file
+	    	 */ 
+	  		
+	  		// (path,"/",          LUNGHEZZA_STRINGHE-1);
+	  		// strncat(path, argv[i],     LUNGHEZZA_STRINGHE-1);
 
 			//inserisciCodaLista(&(options->l),path);
-			options->l = inserisciTestaLista(options->l, path);
+			// options->l = inserisciTestaLista(options->l, path);
 	    	//listaOrdinata( &(options->l), path);
+			
+			options->l = inserisciTestaLista(options->l, argv[i]);
 	    }
 		free(path);
 	}

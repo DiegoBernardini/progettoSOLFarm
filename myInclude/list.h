@@ -28,7 +28,7 @@ void stampaLista(lista);
 void stampaListaF(listaF);
 
 
-int longcmp(long, long );
+long longcmp(long, long );
 void inserisciOrdina(listaF *, long, char*);
 
 #endif /* _LIST_H */

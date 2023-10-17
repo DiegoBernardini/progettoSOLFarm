@@ -225,7 +225,7 @@ void *workerpool_thread(void *arg) {
             //calcolo il risultato
             CHECK_EQ_EXIT("calcola", sommatoria = calcola(path), -1, "calcola", "");
 
-            // printf("[WORKER '%d'] sommatoria calcolata sul file '%s' = '%ld'\n", myid, path, sommatoria);
+            // printf("[WORKER ] sommatoria calcolata sul file '%s' = '%ld'\n", path, sommatoria);
             // printf("[WORKER '%d'] calcola\n", myid);
             
             //calcolo la lunghezza del messaggio 

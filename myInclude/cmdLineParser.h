@@ -40,7 +40,7 @@ void printOptionList(char* s);
 
 int isdot(const char dir[]);
 char* cwd() ;
-void exploreDir(const char* , lista* );
+void exploreDir(const char* , lista*, char* );
 int cmdParse(int, char**, flag* );
 
 #endif /* _CMDLINEPARSER_H */
