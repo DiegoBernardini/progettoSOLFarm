@@ -15,10 +15,6 @@
 //waitpid
 #include <sys/wait.h>
 
-//------MACRO----------------------
-#define DEBUG printf("DEBUG\n");
-#define MASTER printf("[MASTER] ");
-
 // -----VARIABILI GLOBALI----------
 //master.c
 int terminaCodaFlag;//segnala di non inserire altro in coda 
@@ -33,64 +29,24 @@ listaF orderedList;
 //threadpool.c
 threadpool_t *pool;
 
-int clientSocket;			//per inviare messaggi di prova
-pthread_mutex_t lockSocket;	//per inviare messaggi di prova 
+//variabili utilizzate per inviare messaggi di prova tra processi 
+// int clientSocket;			
+// pthread_mutex_t lockSocket;	
 
 //------FUNZIONI------------------
+
+// funzione utilizzata per testare se la connessione tra i due processi tramite socket e' stata stabilita correttamente
+// void inviaMessaggioDiProva();
+
 void mascheraSegnali();
  
 void *sigHandlerF(void *arg);// funzione eseguita dal signal handler thread
 
-void inviaMessaggioDiProva(){ // funzione utilizzata per testare se la connessione tra i due processi tramite socket e' stata stabilita correttamente 
-	char* path1 = "messaggio di prova1";
-	char* path2 = "messaggio di prova265";
-	// char* path3 = "messaggio di prova3";
-	int notused;
-	long sommatoria = 30;
-	int msgDim = strlen(path1);
-    msgDim= msgDim+1; // '\0'
-    
-    LOCK(lockSocket);
-
-    SYSCALL_EXIT("writen msgDim", notused, writen(clientSocket, &msgDim, sizeof(int)), "write msgDim" , "");
-    // printf("scritto %d sulla socket\n", msgDim);
-    SYSCALL_EXIT("writen path", notused, writen(clientSocket, path1, msgDim), "write path" , "");
-    // printf("scritto %s sulla socket\n", path1);
-	SYSCALL_EXIT("writen long", notused, writen(clientSocket, &sommatoria, sizeof(long)), "write long" , "");
-    // printf("scritto %ld sulla socket\n", sommatoria);
-
-	msgDim = strlen(path2);
-    sommatoria = 40;
-
-    SYSCALL_EXIT("writen msgDim", notused, writen(clientSocket, &msgDim, sizeof(int)), "write msgDim" , "");
-    // printf("scritto %d sulla socket\n", msgDim);
-    SYSCALL_EXIT("writen path", notused, writen(clientSocket, path2, msgDim), "write path" , "");
-    // printf("scritto %s sulla socket\n", path2);
-	SYSCALL_EXIT("writen long", notused, writen(clientSocket, &sommatoria, sizeof(long)), "write long" , "");
-    // printf("scritto %ld sulla socket\n", sommatoria);
-
-    msgDim = -1;
-
-    SYSCALL_EXIT("writen msgDim", notused, writen(clientSocket, &msgDim, sizeof(int)), "write msgDim" , "");
-    // printf("scritto %d sulla socket\n", msgDim);
-    UNLOCK(lockSocket); 
-}
 
 //f(x) chiamate tramite at exit 
-void shutDown(){
-	unlink(SOCKNAME);
-	// MASTER printf("socketFile eliminato lato master\n");
-	// printf("MASTER -> CHIUSOOOOOOOOOOO\n");
-}
+void shutDown(){	unlink(SOCKNAME);	}
 
-void freeListaF(){
-	// printf("LISTA FINALE pre exit:\n");	
-	// stampaListaF(orderedList);	
-	deleteListaF(&orderedList);
-	// printf("\nLISTA FINALE cancellata:\n");	
-
-	// stampaListaF(orderedList);	
-}
+void freeListaF(){	deleteListaF(&orderedList);	}
 //END f(x) chiamate tramite at exit 
 //------MAIN-----------------------
 
@@ -114,11 +70,9 @@ int main(int argc, char* argv[]){
 		
 		atexit(freeListaF);
 
-		leggi(); //-> unica cosa che deve fare il collector
+		leggi();
 
-		stampaListaF(orderedList);//-> il risultato finale dopo aver calcolato le somme 
-		
-		exit(EXIT_SUCCESS);
+		stampaListaF(orderedList); 
 	} 
 	else {// MasterWorker -> Padre (simulera' il client)
 		atexit(shutDown);
@@ -146,10 +100,10 @@ int main(int argc, char* argv[]){
 	// MASTER printf("num workers 'n'=%d\nlength 'q'=%d\ntime 't'=%d\n", flagSystem.n, flagSystem.q, flagSystem.t);
 	// MASTER printf("***Stampo lista***\n");
 	// stampaLista(flagSystem.l);
-
 	// deleteLista(&flagSystem.l);
 	// printf("cancello lista\n\n");
 	// stampaLista(flagSystem.l);
+	//--------------------------------------------------------
 
 	// M3 -> ThreadPool 
 	CHECK_EQ_EXIT("createThreadPool", pool = createThreadPool(flagSystem.n, flagSystem.q, flagSystem.t), NULL, "createThreadPool", "");
@@ -157,14 +111,13 @@ int main(int argc, char* argv[]){
 	// M4 -> apro connessione socket CLIENT 
  	openClientSocket();
 
-	// --------- a questo punto e' stato settato tutto correttamente 
+	//A QUESTO PUNTO E' TUTTO SETTATO CORRETTAMENTE 
 
  	// inviaMessaggioDiProva();
 
 	// inserisco nella coda concorrente la lista dei file ottenuti dal parsing (flagSystem.l)
  	pushList(&flagSystem.l);
  	
-
  	//SE VA TUTTO BENE E NON ARRIVANO SEGNALI, INIZIO IL PROTOCOLLO DI TERMINAZIONE 
  	
  	//ottengo lock 
@@ -172,44 +125,28 @@ int main(int argc, char* argv[]){
 	// avvio protocollo di terminazione 
 	terminaCodaFlag = 1;
 	//e lo comunico a tutti i thread
-	
-	// MASTER printf("TERMINA CODA FLAG =1 ORA\n");
-	
-
 	BROADCAST(pool->cond_qEmpty);
 	// sblocco lock
 	UNLOCK(pool->lock);
 
-	// MASTER printf("LOCK SBLOCCATA\n");
-
 	//attendo (join thread)
 	for (int i = 0; i < flagSystem.n; ++i){
-	
-		// MASTER printf("SO QUI A ASPETTA CHE ESPLODA IL THREAD %d\n", i);
 		if(pthread_join(pool-> threads[i], NULL) != 0){
 			perror("some error after join");
 			exit(EXIT_FAILURE);
 		}
-		// MASTER printf("ho fatto la join del thread %d\n", i);
 	}
 
 	int notused;
-	// MASTER printf("waitpid del master terminata\n");
-	// MASTER printf("***START waitpid***\n");
 	SYSCALL_EXIT("waitpid", notused, waitpid(pid, NULL, 0), "waitpid", "");
-	// MASTER printf("***END waitpid***\n");
-	// MASTER printf("waitpid del master terminata\n");
 
 	//mi occupo anche del signal handler
 	if(terminaGestoreFlag == 0){//invio io il segnale 
 		CHECK_NEQ_EXIT("pthread_kill", pthread_kill(sighandler_thread, SIGTERM), 0, "pthread_kill", "");
 
 	}
-	
-	// MASTER printf("join del sighandler\n");
-	CHECK_NEQ_EXIT("join sighandler", pthread_join(sighandler_thread, NULL), 0, "join sighandler", "");
 
-	// exit(EXIT_SUCCESS);
+	CHECK_NEQ_EXIT("join sighandler", pthread_join(sighandler_thread, NULL), 0, "join sighandler", "");
 	}
 	return 0;
 }
@@ -261,7 +198,7 @@ void *sigHandlerF(void *arg) {
 			    pthread_exit(NULL);	    	    
 		    case SIGUSR1:
 		    // TO DO
-		    // il processo MasterWorker notifica al processo Collector di stampare i risultati ricevutri fino a quel momento(in modo ordinato)
+		    // il processo MasterWorker notifica al processo Collector di stampare i risultati ricevuti fino a quel momento(in modo ordinato)
 			    stampaFlag = 1;
 			    break; 
 			default: ; 
@@ -269,3 +206,40 @@ void *sigHandlerF(void *arg) {
     }	   
    return NULL;	   
 }
+
+/*
+void inviaMessaggioDiProva(){  
+	char* path1 = "messaggio di prova1";
+	char* path2 = "messaggio di prova265";
+	// char* path3 = "messaggio di prova3";
+	int notused;
+	long sommatoria = 30;
+	int msgDim = strlen(path1);
+    msgDim= msgDim+1; // '\0'
+    
+    LOCK(lockSocket);
+
+    SYSCALL_EXIT("writen msgDim", notused, writen(clientSocket, &msgDim, sizeof(int)), "write msgDim" , "");
+    // printf("scritto %d sulla socket\n", msgDim);
+    SYSCALL_EXIT("writen path", notused, writen(clientSocket, path1, msgDim), "write path" , "");
+    // printf("scritto %s sulla socket\n", path1);
+	SYSCALL_EXIT("writen long", notused, writen(clientSocket, &sommatoria, sizeof(long)), "write long" , "");
+    // printf("scritto %ld sulla socket\n", sommatoria);
+
+	msgDim = strlen(path2);
+    sommatoria = 40;
+
+    SYSCALL_EXIT("writen msgDim", notused, writen(clientSocket, &msgDim, sizeof(int)), "write msgDim" , "");
+    // printf("scritto %d sulla socket\n", msgDim);
+    SYSCALL_EXIT("writen path", notused, writen(clientSocket, path2, msgDim), "write path" , "");
+    // printf("scritto %s sulla socket\n", path2);
+	SYSCALL_EXIT("writen long", notused, writen(clientSocket, &sommatoria, sizeof(long)), "write long" , "");
+    // printf("scritto %ld sulla socket\n", sommatoria);
+
+    msgDim = -1;
+
+    SYSCALL_EXIT("writen msgDim", notused, writen(clientSocket, &msgDim, sizeof(int)), "write msgDim" , "");
+    // printf("scritto %d sulla socket\n", msgDim);
+    UNLOCK(lockSocket); 
+}
+*/

@@ -3,9 +3,7 @@
 #include <time.h>
 #define MASTER printf("[MASTER] ");
 
-
 // -----VARIABILI GLOBALI----------
-
 int clientSocket;//clientSocket = fd che puo' essere utilizzato per I/O
 pthread_mutex_t lockSocket = PTHREAD_MUTEX_INITIALIZER;
 
@@ -17,14 +15,11 @@ int stampaFlag         = 0;//segnala ai thread di lanciare un messaggio di stamp
 threadpool_t *pool;
 // -END VARIABILI GLOBALI----------
 
-//ok
 void closeClientSocket(){
     int notused;
     SYSCALL_EXIT("close", notused, close(clientSocket), "close", "");
-    // MASTER printf("Client non piu connesso\n");
 }
 
-//ok
 void openClientSocket(){
     //stabilisco la connessione tramite una socket 
     int notused;
@@ -38,7 +33,6 @@ void openClientSocket(){
 
     SYSCALL_EXIT("connect", notused, myConnect(clientSocket, (struct sockaddr*)&sa_server, sizeof(sa_server)), "connect", "");
     //connessione stabilita
-
 	// MASTER printf("connesso al collector\n"); 
 }//END openClientConnection
 
@@ -54,7 +48,7 @@ int myConnect(int clientSocket, const struct sockaddr* sa_server, socklen_t addr
 
     while((errno = 0), (connect(clientSocket, sa_server, addrlen)) == -1){
     	if(errno ==  ENOENT || errno == EAGAIN || errno == EINTR || (errno == ECONNREFUSED && (attempt--) != 0)){
-    		// attempt--;
+    		attempt--;
     		// printf("'connect' failed, %d tentativi rimanenti, errno=%d\n", attempt, errno);
     		sleep(1);
     	}
@@ -75,9 +69,8 @@ void pushList(lista *listaFileBinari){
         }
         
         nanosleep(&(pool->delay), NULL); //aspetto
-        // sleep(1);
 
-        //elimino dalla lista il file appena processato 
+        //elimino dalla lista il nodo che contiene il file appena processato 
         tmp = (*listaFileBinari)->next;
         free(*listaFileBinari);
         //vado avanti

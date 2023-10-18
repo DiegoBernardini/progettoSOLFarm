@@ -4,7 +4,7 @@
 
 // ----------VARIABILI GLOBALI-------------------
 int listenfd;
-int connfd; //nuovo fd per la nuova socket per la comunicazione appena creata
+int connfd; //fd della socket creata per la comunicazione 
 
 listaF orderedList = NULL;
 // ----------END VARIABILI GLOBALI-------------------
@@ -15,30 +15,20 @@ The atexit() function registers the given function to be called at nor‐
 mal process termination. Functions so registered are called in the reverse order
 of their registration.
 */
-void cancellaSocketFile(){  
-    unlink(SOCKNAME);
-    // COLLECTOR printf("socketFile eliminato lato collector\n");
-    // printf("COLLECTOR -> CHIUSOOOOOOOOOOO\n");
-
-} 
-//chiude tramite file descriptor
+void cancellaSocketFile(){  unlink(SOCKNAME);   } 
+//chiude tramite file descriptor (listenfd)
 void closeServerSocket(){
     int notused;
-    SYSCALL_EXIT("close", notused, close(listenfd), "close", "");//chiudo la listen socket
-    // COLLECTOR printf("Server non piu' in ascolto\n");
+    SYSCALL_EXIT("close", notused, close(listenfd), "close", "");
 }
-
-//chiude tramite file descriptor
+//chiude tramite file descriptor (connfd)
 void chiudiConnessione(){
     int notused;
-    SYSCALL_EXIT("close", notused, close(connfd), "close", "");//chiudo la listen socket
-    // COLLECTOR printf("Comunicazione interrotta con il client\n");
-
+    SYSCALL_EXIT("close", notused, close(connfd), "close", "");
 }
 //-----END funzioni chiamate tramite atexit() ---------------
  
 // ---------------SERVER-------------------
-//ok
 void openServerSocket (){
     //creo la socket
     SYSCALL_EXIT("socket", listenfd, socket(AF_UNIX, SOCK_STREAM, 0), "socket", "");
@@ -64,70 +54,27 @@ void openServerSocket (){
     SYSCALL_EXIT("accept", connfd, accept(listenfd, (struct sockaddr*)NULL ,NULL), "accept","");
     
     atexit(chiudiConnessione); 
-    // --------END-----------------------------
+
     // COLLECTOR printf("Nuovo utente accettato dal collector\n");  
 } //END openServerSocket
 
-//sembra ok 
+
 void leggi(){
     int msgDim = 0;
     long sommatoria  = 0;
     char* nomeFile   = NULL;
             
-    // if((nomeFile = (char*) malloc(sizeof(char)*BUFSIZE)) == NULL){
-    //     perror("malloc nomeFile");
-    //     exit(EXIT_FAILURE);
-    // }
-    // char *buf        = NULL;//delete
-    // msg_t* messaggio = NULL;//delete
-
     while(msgDim != -1){
-        // COLLECTOR printf("terminaCodaFlag = %d", terminaCodaFlag);
-    // do{
-        // printf("sono dentro al ciclo DO di leggi()");
-        // messaggio = (msg_t*) malloc(sizeof(msg_t));//TO DO CHECK 
-        // if(!messaggio){
-        //     perror("malloc messaggio");
-        //     exit(EXIT_FAILURE);
-        // } 
-
         //lettura dimensione tot del messaggio
         if(readn(connfd, &msgDim, sizeof(int)) == -1){
-            // free(messaggio);
-            perror("readn1");
+            perror("readn1 msgDim");
             exit(EXIT_FAILURE);
         }
-        
         // COLLECTOR printf("ricevuto msgDim == %d\n", msgDim);
         
         if(msgDim > 0){ //indica la dimensione del messaggio ed esclude la stampa e la terminazione forzata
-            // printf("caso msgDim >0\n");
             
-            // messaggio = (msg_t*) malloc(sizeof(msg_t));//TO DO CHECK 
-            
-            // if(!messaggio){
-            //     perror("malloc messaggio");
-            //     exit(EXIT_FAILURE);
-            // }
-
-
-            // //alloco buffer di supporto
-            // if((buf = (char*) malloc(sizeof(char) * msgDim)) == NULL){
-            //     free(messaggio);
-            //     perror("malloc buffer");
-            //     exit(EXIT_FAILURE);
-            // }
-              //alloco buffer di supporto
-
-
-            //lettura nome file
-            // if(readn(connfd, buf, msgDim) == -1){
-            //     free(messaggio);
-            //     free(buf);
-            //     perror("readn2");
-            //     exit(EXIT_FAILURE);
-            // }
-
+            //creazione array di supporto per inserire la stringa che mi verra' inviata 
             if((nomeFile = (char*) malloc(sizeof(char)*BUFSIZE)) == NULL){
                 perror("malloc fileName");
                 exit(EXIT_FAILURE);
@@ -139,57 +86,28 @@ void leggi(){
                 perror("readn2 nomeFile");
                 exit(EXIT_FAILURE);
             }
-            
-
-            // if((messaggio->fileName = (char*) malloc(sizeof(char) * msgDim)) == NULL){
-            //     free(messaggio);
-            //     free(buf);
-            //     perror("malloc fileName");
-            //     exit(EXIT_FAILURE);
-            // }
-            
-            //copio il nome del file nel mio array di supporto
-            // strncpy(messaggio->fileName, buf, msgDim);
-            // free(buf);
-            // buf = NULL;
-
-            // COLLECTOR printf("ricevuto: '%s'\n", messaggio->fileName);
+            // COLLECTOR printf("ricevuto: '%s'\n", nomeFile);
 
             //lettura valore sommatoria (long)
-            // if(readn(connfd, &sommatoria, sizeof(long)) == -1){
-            //     free(messaggio->fileName);
-            //     free(messaggio);
-            //     perror("readn3");
-            //     exit(EXIT_FAILURE);
-            // }
-
             if(readn(connfd, &sommatoria, sizeof(long)) == -1){
                 free(nomeFile);
                 perror("readn3 sommatoria");
                 exit(EXIT_FAILURE);
             }
-            // messaggio->value = sommatoria;
-
             // fprintf(stdout, "inserisco nella lista ordinata %ld \t %s \n", sommatoria, nomeFile);
-            // inserisciOrdina(&orderedList, sommatoria, messaggio->fileName);
             inserisciOrdina(&orderedList, sommatoria, nomeFile);
             // stampaListaF(orderedList);
             free(nomeFile);
             nomeFile = NULL;
         }
         else{
-            // printf("ramo else\n");
+
             if(msgDim == -2){ //messaggio di stampa
-                printf("caso msgDim = -2\n");
-                // free(messaggio);
                 free(nomeFile);
                 stampaListaF(orderedList);
             }
         }
-    // } while(msgDim != -1); //messaggio di terminazione '-1'
-    }//messaggio di terminazione '-1'
-    // COLLECTOR printf("ho ricevuto il messaggio di terminazione -1\n");
-    // sleep(1);
-    // free(messaggio);
+    }//arrivato messaggio di terminazione '-1'
+
     free(nomeFile);
 }

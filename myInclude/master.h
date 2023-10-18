@@ -16,7 +16,6 @@ void closeClientSocket();
 int myConnect(int sockfd, const struct sockaddr* sa_server, socklen_t addrlen);
 
 void pushList();
-// void mascheraSegnali();
 
 #endif /* _MASTER_H */
 

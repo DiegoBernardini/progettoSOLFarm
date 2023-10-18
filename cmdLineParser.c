@@ -50,28 +50,24 @@ char* cwd() {
 * @lista_file: elenco dei file regolari ottenuti a partire dalla cartella nomedir
 */ 
 void exploreDir(const char nomedir[], lista *lista_file, char* pathRelativo) {
-	// printf("sono appena entrato e pathrelativo =%s\n", pathRelativo );
-
+    
     struct stat statbuf;
     int r;
     SYSCALL_EXIT(stat,r,stat(nomedir,&statbuf),"Facendo stat del nome %s: errno=%d\n", nomedir, errno);
 
     DIR * dir;
-    // fprintf(stdout, "-----------------------\n");
-    // fprintf(stdout, "Directory %s:\n",nomedir);
-    
+
     if ((dir=opendir(nomedir)) == NULL) {
 		perror("opendir");
 		print_error("Errore aprendo la directory %s\n", nomedir);
 		return;
     }
     struct dirent *file;
-   	//lista l=NULL;
     
 	while((errno=0, file = readdir(dir)) != NULL) {
 	    struct stat statbuf;
-	    char filename[LUNGHEZZA_STRINGHE];//array in cui memorizzo il path assoluto dei file 
-	    char buf[LUNGHEZZA_STRINGHE]; //array in cui vado a memorizzare il path relativo dei file che incontro a partire dal nome della directory passata come argomento nella cmd
+	    char filenameAbs[LUNGHEZZA_STRINGHE];//array in cui memorizzo il path assoluto dei file 
+	    char filenameRel[LUNGHEZZA_STRINGHE]; //array in cui vado a memorizzare il path relativo dei file che incontro a partire dal nome della directory passata come argomento nella cmd
 
 	    int len1 = strlen(nomedir);
 	    int len2 = strlen(file->d_name);
@@ -81,47 +77,45 @@ void exploreDir(const char nomedir[], lista *lista_file, char* pathRelativo) {
 	    }
 
 	    //creo manualmente il path assoluto
-	    strncpy(filename,nomedir,      LUNGHEZZA_STRINGHE-1);
-	    strncat(filename,"/",          LUNGHEZZA_STRINGHE-1);
-	    strncat(filename,file->d_name, LUNGHEZZA_STRINGHE-1);
+	    strncpy(filenameAbs,nomedir,      LUNGHEZZA_STRINGHE-1);
+	    strncat(filenameAbs,"/",          LUNGHEZZA_STRINGHE-1);
+	    strncat(filenameAbs,file->d_name, LUNGHEZZA_STRINGHE-1);
 
-	    // printf("FILENAME APPENA CREATO =%s\n", filename );
+	    // printf("FILENAME APPENA CREATO =%s\n", filenameAbs );
 
 	    // creo manualmente il path relativo
-	    strncpy(buf, pathRelativo, LUNGHEZZA_STRINGHE-1);
-		strncat(buf, "/",          LUNGHEZZA_STRINGHE-1);
-	    strncat(buf, file->d_name, LUNGHEZZA_STRINGHE-1);
+	    strncpy(filenameRel, pathRelativo, LUNGHEZZA_STRINGHE-1);
+		strncat(filenameRel, "/",          LUNGHEZZA_STRINGHE-1);
+	    strncat(filenameRel, file->d_name, LUNGHEZZA_STRINGHE-1);
 
-	    // printf("PATHRELATIVO APPENA CREATO =%s\n", buf);
+	    // printf("PATHRELATIVO APPENA CREATO =%s\n", filenameRel);
 
-	    if (stat(filename, &statbuf)==-1) {
+	    if (stat(filenameAbs, &statbuf)==-1) {
 			perror("eseguendo la stat");
-			print_error("Errore nel file %s\n", filename);
+			print_error("Errore nel file %s\n", filenameAbs);
 			return;
 	    }
 	    //se e' una directory ci entro 
 	    if(S_ISDIR(statbuf.st_mode)) {
-			// if ( !isdot(filename) ) exploreDir(filename, lista_file);
-			if ( !isdot(filename) ) exploreDir(filename, lista_file, buf);
-
+			if ( !isdot(filenameAbs) ) exploreDir(filenameAbs, lista_file, filenameRel);
 	    }
 	    // se e' un file regolare
 	    else if(S_ISREG(statbuf.st_mode)){
+	    	// printf("FILE REGOLARE: filenameAbs= %s, file->d_name=%s\n, pathRelativo=%s\n", filenameAbs, file->d_name, pathRelativo);
+	    	
 	    	/*le righe seguenti sono state commentate per superare i test, 
 	    	* dato che facevano uso del path assoluto dei file
 	    	*/
-	    	// *lista_file = inserisciTestaLista(*lista_file, filename);
-	    	//inserisciCodaLista(lista_file, filename);
-			//listaOrdinata(lista_file, filename);
+	    	// *lista_file = inserisciTestaLista(*lista_file, filenameAbs);
+	    	//inserisciCodaLista(lista_file, filenameAbs);
+			//listaOrdinata(lista_file, filenameAbs);
 
-	    	// printf("FILE REGOLARE: filename= %s, file->d_name=%s\n, pathRelativo=%s\n", filename, file->d_name, pathRelativo);
-	    	// printf("STO PER INSERIRE NELLA LISTA %s\n", buf );
-	    	*lista_file = inserisciTestaLista(*lista_file, buf);
+	    	*lista_file = inserisciTestaLista(*lista_file, filenameRel);
 		}
 	}
-	if (errno != 0) perror("readdir");//TODO gestione errore?
+	if (errno != 0) perror("readdir");
+
 	closedir(dir);
-	// fprintf(stdout, "-----------------------\n");
 }//end exploreDir
 
 int cmdParse(int argc, char* argv[], flag* options){
@@ -133,7 +127,8 @@ int cmdParse(int argc, char* argv[], flag* options){
 			if (strlen(optarg) > LUNGHEZZA_STRINGHE) { //si assume che non succeda 
 		    	printf("la string di '-%c e' troppo lunga\n", optopt);
 				return EXIT_FAILURE;
-			}			
+			}
+
 			//check tipo file
 			struct stat file_info;
 			if(stat(optarg, &file_info) == -1 ){
@@ -142,63 +137,66 @@ int cmdParse(int argc, char* argv[], flag* options){
 			}
 			if (!S_ISDIR(file_info.st_mode))//NON e' una cartella
 				break;
+
 			// recupero la cwd 
 			char* now=cwd();
+
 			// cambio directory
-			// fprintf(stdout, "cwd nel cmdParse:%s\n\n", now);
-			// printf("optarg prima del parsing  = %s\n", optarg);
-			//imposto la nuova cwd
 			if(chdir(optarg) == -1){ 
 				perror("chdir");
 				free(now);
 				exit(EXIT_FAILURE);
 			}
-			char *new_cwd = cwd();
-			//vado alla nuova cartella
-			// printf("new_cwd=%s now=%s optarg=%s\n", new_cwd, now, optarg);
 
-			exploreDir(new_cwd, &(options->l), optarg);//CON PATH ASSOLUTO
+			//imposto la nuova cwd
+			char *new_cwd = cwd();
+
+			// printf("new_cwd=%s now=%s optarg=%s\n", new_cwd, now, optarg);
+			
+			exploreDir(new_cwd, &(options->l), optarg);
 
 			free(new_cwd);  
 			// stampaLista(options->l);
 			
+			//ripristino la cwd iniziale 
 			if(chdir(now) == -1){ 
 				perror("chdir");
 				free(now);
 				exit(EXIT_FAILURE);
 			}
+
 			free(now);
-			// printf("cwd dopo exploreDir  = %s\n", cwd);
+
 			break;
 		case '?': 
 			printf("WARNING: l'opzione '-%c' non e' riconosciuta\n", optopt);
 			break;
 		case ':':
-		    printf("WARNING, l'opzione '-%c' richiede un argomento <uso valore di default>\n", optopt);
+		    fprintf(stderr, "WARNING, l'opzione '-%c' richiede un argomento <uso valore di default>\n", optopt);
 		    fprintf(stderr, "usa: %s [-n <num> -q <num> -d <nome-file>]  [<nome-file> ...]\n", argv[0]);
 			fprintf(stderr, " -n <nthread> specifica il numero di thread worker a <nthread>, default: %d\n", DEFAULT_NTHREAD);
 			fprintf(stderr, " -q <qlen> specifica la lunghezza della coda concorrente a <qlen>, default: %d\n", DEFAULT_QUEUE_LEN);
 			fprintf(stderr, " -d <directory-name> specifica una directory che contiene file bin o altre directory che contengono file bin\n");
 			fprintf(stderr, " -t <delay> specifica un tempo in millisec che intercorre tra l'invio di due richieste successive agli worker da parte del master, default: %d\n", DEFAULT_TIME_DELAY);
-			//printOptionList(argv[0]);
 		    break;
 		case 'n':
 		case 'q':
-		case 't'://n: mod 4 = 2, q: mod 4 = 1, t: mod 4 = 0 SEPARARE T DAGLI ALTRI DUE 
-			// printf("sono dentro lo switch opzione %c optarg = %s \n", opt, optarg);
+		case 't':
+		// n: mod 4 = 2, q: mod 4 = 1, t: mod 4 = 0 SEPARARE T DAGLI ALTRI DUE 
+			// printf("opzione %c optarg = %s \n", opt, optarg);
 			if (isNumber(optarg, &tmp) != 0) {
-		    	fprintf(stderr, "WARNING: l'argomento di '-%c' non e' un numero valido,\n", optopt);//TODO uso il valore di default
+		    	fprintf(stderr, "WARNING: l'argomento di '-%c' non e' un numero valido,\n", optopt);
 		  		return EXIT_FAILURE;
 		  	}
 			//vedo quale opzione e' stata inserita
 	  		int i = opt % 4;
 		  	if (tmp <= 0) {
 		  		if(i == 2) // option '-n'
-			    	fprintf(stderr, "WARNING: deve esserci almeno 1 thread\n");//TODO uso il valore di default
+			    	fprintf(stderr, "WARNING: deve esserci almeno 1 thread\n");
 			    else if(i == 1) // option '-q'
-			    	fprintf(stderr, "WARNING: la coda deve essere lunga almeno 1\n");//TODO uso il valore di default
+			    	fprintf(stderr, "WARNING: la coda deve essere lunga almeno 1\n");
 				else //option '-t' 
-					fprintf(stderr, "WARNING: il tempo di delay deve essere >= 0\n");//TODO uso il valore di default
+					fprintf(stderr, "WARNING: il tempo di delay deve essere >= 0\n");
 				return EXIT_FAILURE; 
 		  	}
 		  	if(i == 2) 		options->n = tmp;

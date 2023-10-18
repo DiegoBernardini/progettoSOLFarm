@@ -19,9 +19,6 @@
 #define MAXBACKLOG  1 //secondo le specifiche della traccia
 #endif
 
-
-
-
 /** Evita letture parziali
  *
  *   \retval -1   errore (errno settato)

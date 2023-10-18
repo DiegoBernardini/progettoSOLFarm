@@ -12,9 +12,9 @@ typedef struct message{
 
 void openServerSocket();
 
-void closeServerSocket();	// close 
 void cancellaSocketFile();  // unlink
 void chiudiConnessione();	// close
+void closeServerSocket();	// close 
 
 void leggi();
 

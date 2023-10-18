@@ -1,6 +1,7 @@
 # compilatore da usare
 CC		=  gcc
-AR              =  ar
+
+AR 		=  ar
 # flag di compilazione 
 CFLAGS	        += -std=c99 -Wall -Werror -g
 ARFLAGS         =  rvs
@@ -10,13 +11,12 @@ INCDIR 		= ./myInclude
 INCLUDES 	= -I $(INCDIR)
 LDFLAGS 	= -L.
 OPTFLAGS	= -O3 
-LIBS            = -pthread
+LIBS        = -pthread
 
 # nome dell' eseguibile
 EXE 		= farm
 
 # aggiungere qui altri targets
-# TARGETS		= main
 TARGETS		= farm generafile
 
 
@@ -48,13 +48,13 @@ clean 	:
 cleanall	: clean
 	rm -f *.o *~ *.a ./farm.sck  
 
+test: generafile farm
+	./test.sh
+
+
 # test: farm
 # 	@valgrind --leak-check=full --track-origins=yes ./$(EXE) -d ./dat -n 3 -q 5
 # 	make clean
 # 	@valgrind --leak-check=full ./$(EXE) -d ./dat -n 3
 # 	./$(EXE) -d ./dat -n 3
 # 	@ps -A -ostat,pid,ppid | grep Z 
-
-test: generafile farm
-	./test.sh
-

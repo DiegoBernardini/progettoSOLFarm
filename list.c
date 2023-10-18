@@ -90,15 +90,11 @@ lista inserisciTestaLista(lista root, char* stringa){
 	return t;
 }
 
-long longcmp(long a, long b){
-	// return b-a; 	//crescente
-	return a-b;		//decrescente
-}
+long longcmp(long a, long b){	return a-b;	}
 
 void inserisciOrdina(listaF *head, long value, char* stringa){
 	int lenght = strlen(stringa) +1; //+ '\0'
 
-	// printf("l di %s = %d\n", stringa,  lenght);
 	listaF corr = *head;
 	listaF prec = NULL;
 	listaF new = malloc(sizeof(struct nodoF));
@@ -108,7 +104,6 @@ void inserisciOrdina(listaF *head, long value, char* stringa){
 
 		strncpy(new->path, stringa, lenght);
 	//nuovo nodo creato
-
 
 	while(corr != NULL && longcmp(corr->result, new->result)<0){
 		prec = corr;
@@ -125,23 +120,16 @@ void inserisciOrdina(listaF *head, long value, char* stringa){
 }//listaOrdinata
 
 void stampaListaF(listaF l){
-
-
 	while(l!=NULL) {
 		printf("%ld\t%s\n", l->result, l->path);
-		// fprintf(stdout, "%ld <- ", l->result);
-		// fprintf(stdout, "%s\n", l->path);
-
 		l = l-> next;
-		// printf("\n");
 	}
 	// printf("->NULL\n");
-	// fprintf(stdout, "-----------------------\n");
-
 }
 
 void deleteListaF(listaF *head){
 	listaF next_elem = NULL;
+
 	while(*head != NULL){
 		next_elem = (*head)->next;
 		free((*head)->path);

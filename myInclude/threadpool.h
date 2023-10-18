@@ -24,7 +24,6 @@ typedef struct threadpool_t {
     pthread_t *threads;         // pool di Th worker
     int numthreads;             // numero di thread (size dell'array threads)
     int taskonthefly;           // numero di task attualmente in esecuzione 
-    // int threadAttivi;        //
 
     char **queue;             // coda interna per task pendenti
     int queue_size;           // massima size della coda, puo' essere anche -1 ad indicare che non si vogliono gestire task pendenti
@@ -32,8 +31,6 @@ typedef struct threadpool_t {
     int head, tail;           // riferimenti della coda
     
     struct timespec delay;
-
-    // int exiting;              // se > 0 e' iniziato il protocollo di uscita, se 1 il thread aspetta che non ci siano piu' lavori in coda
 } threadpool_t;
 
 
@@ -57,8 +54,6 @@ char* pop(threadpool_t *pool);
 int  push(threadpool_t *pool, char *data); // retval == 0 oppure -1 in caso di errore
 
 long calcola(char* path);
-
-
 
 #endif /* THREADPOOL_H_ */
 

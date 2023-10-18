@@ -5,7 +5,6 @@
 #include <threadpool.h>
 #define DEBUG printf("DEBUG\n");
 
-
 //flag dichiarati in master.c
 int terminaCodaFlag;
 int stampaFlag;
@@ -15,16 +14,9 @@ pthread_mutex_t lockSocket;
 
 threadpool_t *pool = NULL;
 
-//ok
+// ------funzioni-------------
 threadpool_t *createThreadPool(int nthreads, int qSize, int delay) {
-    //TO DO si puo' eliminare questo controllo? lo faccio gia' quando leggo gli argomenti? 
-    if(nthreads <= 0 || qSize <= 0) {
-        errno = EINVAL;
-        return NULL;
-    }
-    
-    //TO DO MALLOC(threadpool_t *pool, sizeof(threadpool_t) );
-    // threadpool_t *pool = (threadpool_t *)malloc(sizeof(threadpool_t));
+
     pool = (threadpool_t *)malloc(sizeof(threadpool_t));
     if (pool == NULL) return NULL;
 
@@ -39,20 +31,18 @@ threadpool_t *createThreadPool(int nthreads, int qSize, int delay) {
     pool->delay.tv_sec  = delay / 1000;
     pool->delay.tv_nsec = (delay % 1000) *1000000;
 
-
-
     /* Allocate thread and task queue */
     pool->threads = (pthread_t *)malloc(sizeof(pthread_t) * nthreads);
     if (pool->threads == NULL) {
        free(pool);
-       return NULL; //-1
+       return NULL;
     }
 
     pool->queue = (char**)malloc(sizeof(char*) *(qSize));
     if (pool->queue == NULL) {
         free(pool);
         free(pool->threads);
-        return NULL; //-1
+        return NULL;
     }
 
     for(int i = 0; i < pool->queue_size; i++){
@@ -63,7 +53,7 @@ threadpool_t *createThreadPool(int nthreads, int qSize, int delay) {
         free(pool);
         free(pool->threads);
         free(pool->queue);
-        return NULL; //-1
+        return NULL;
     }
 
   
@@ -72,7 +62,7 @@ threadpool_t *createThreadPool(int nthreads, int qSize, int delay) {
         free(pool->threads);
         free(pool->queue);
         if((errno = pthread_mutex_destroy(&(pool->lock))) != 0){ perror("destroying mutex in createThreadPool");  }
-        return NULL; //-1
+        return NULL; 
     }
 
 
@@ -82,37 +72,33 @@ threadpool_t *createThreadPool(int nthreads, int qSize, int delay) {
         free(pool->queue);
         if((errno = pthread_mutex_destroy(&(pool->lock))) != 0){        perror("destroying mutex in createThreadPool");  }
         if((errno = pthread_cond_destroy(&(pool->cond_qFull))) != 0){   perror("destroying cond_qFull in createThreadPool");    }
-        return NULL; //-1
+        return NULL;
     }
 
-    // //creazione pool di worker
+    //creazione pool di worker
     for(int i = 0; i < nthreads; i++) {
         if((errno = pthread_create(&(pool->threads[i]), NULL, workerpool_thread, (void*)pool)) != 0) {
          // errore fatale, libero tutto forzando l'uscita dei threads 
             terminaCodaFlag = 1; 
             destroyThreadPool();
-
-            // errno = EFAULT;
             return NULL;
         }
     }
 
     pool->numthreads   = nthreads;
     pool->taskonthefly = nthreads; //numero di thread attivi
-    
-    // printf("pool->numthreads = %d, pool->taskonthefly = %d\n", pool->numthreads , pool->taskonthefly );
+
     atexit(destroyThreadPool);
     
     return pool;
 }//END createThreadPool
 
-// ok
 void destroyThreadPool() {
     if(pool == NULL) {
-        errno = EINVAL;
         perror("destroyThreadPool");
         return;
     }
+
     //free threads[i]
     if(pool->threads) free(pool->threads);
     
@@ -131,7 +117,6 @@ void destroyThreadPool() {
     if ((errno = pthread_mutex_destroy(&(pool->lock)))        != 0) perror("destroy mutex");
     
     free(pool);  
-
     // printf("Pool correttamente liberato\n");  
 }//END destroyThreadPool
 
@@ -146,7 +131,6 @@ void *workerpool_thread(void *arg) {
     long sommatoria;
     int msgDim;
     int notused;
-    // int myid = 30;
 
     //-----utilizzata per la fase di test 
     // pthread_t self = pthread_self();
@@ -164,39 +148,28 @@ void *workerpool_thread(void *arg) {
     while(1){
         LOCK(myPool->lock); //prendo la lock
 
-
         //attendo di ricevere un messaggio oppure il flag di terminazione  
         while(myPool->queue_length == 0 && terminaCodaFlag == 0){
             //coda vuota 
-            // printf("thread %d bloccato sulla WAIT perche' la coda e' vuota\n", myid);
             WAIT(myPool->cond_qEmpty, myPool->lock);//aspetto
         }
-
-         // printf("terminaCodaFlag = %d queue_length =  %d\n", terminaCodaFlag, myPool->queue_length );
 
         if(myPool->queue_length == 0 && terminaCodaFlag == 1){
             //coda vuota, siamo in fase di terminazione, devo uscire
             //l'ultimo thread in vita manda il messaggio di terminazione
-            // printf("myPool->taskonthefly = %d\n", myPool->taskonthefly);
             if(myPool->taskonthefly == 1){
                 msgDim = -1;
                 LOCK(lockSocket);
-                // printf("[THREADPOOL]INVIO AL COLLECTOR SEGNALE DI TERMINAZIONE\n");
                 // Invio al collector '-1'
                 SYSCALL_EXIT("writen terminaCodaFlag", notused, writen(clientSocket, &msgDim, sizeof(int)), "write terminaCodaFlag" , "");
                 UNLOCK(lockSocket);
-
-                // destroyThreadPool();
             }
 
             myPool->taskonthefly--;
-            //se invece e' colpa del signal handler
+            //se e' colpa del signal handler
             SIGNAL(myPool->cond_qFull);
-            // SIGNAL(myPool->cond_qEmpty);
 
             UNLOCK(myPool->lock)
-
-            // printf("thread %d mi sto per distruggere, restano taskonthefly = %d \n", myid, myPool-> taskonthefly);
 
             return NULL; // pthread exit
         }
@@ -206,27 +179,23 @@ void *workerpool_thread(void *arg) {
             UNLOCK(myPool->lock);
 
             msgDim = -2;
+
             LOCK(lockSocket);
-            // CHECK_EQ_EXIT("writen stampaFlag", writen(clientSocket, &msgDim, sizeof(int)), -1, "writen stampaFlag");
             SYSCALL_EXIT("writen stampaFlag", notused, writen(clientSocket, &msgDim, sizeof(int)), "write stampaFlag" , "");
-
             UNLOCK(lockSocket);
-            stampaFlag = 0;//ripristino
 
+            stampaFlag = 0;//ripristino
         }
         else{
             //nuovo task
             CHECK_EQ_EXIT("pop", path = pop(myPool), NULL, "pop", "");
 
-            //faccio la signal al master
-            SIGNAL(myPool->cond_qFull); //segnalo che la coda non e'
-            UNLOCK(myPool->lock);       //rilascio la lock
+            SIGNAL(myPool->cond_qFull);
+            UNLOCK(myPool->lock);       
 
             //calcolo il risultato
             CHECK_EQ_EXIT("calcola", sommatoria = calcola(path), -1, "calcola", "");
-
             // printf("[WORKER ] sommatoria calcolata sul file '%s' = '%ld'\n", path, sommatoria);
-            // printf("[WORKER '%d'] calcola\n", myid);
             
             //calcolo la lunghezza del messaggio 
             msgDim = strlen(path);
@@ -234,17 +203,13 @@ void *workerpool_thread(void *arg) {
 
             //invio la risposta
             LOCK(lockSocket);
-            // CHECK_EQ_EXIT("writen - msgDim", writen(clientSocket, &msgDim, sizeof(int)),      -1, "writen - msgDim");
-            SYSCALL_EXIT("writen msgDim", notused, writen(clientSocket, &msgDim, sizeof(int)), "write msgDim" , "");
-            // CHECK_EQ_EXIT("writen - path",   writen(clientSocket, path, msgDim),              -1, "writen - path");
-            SYSCALL_EXIT("writen path", notused, writen(clientSocket, path, msgDim), "write path" , "");
-            // CHECK_EQ_EXIT("writen - value",  writen(clientSocket, &sommatoria, sizeof(long)), -1, "writen - value");
-            SYSCALL_EXIT("writen value", notused, writen(clientSocket, &sommatoria, sizeof(long)), "write value" , "");
+            SYSCALL_EXIT("writen msgDim", notused, writen(clientSocket, &msgDim, sizeof(int)),      "write msgDim" , "");
+            SYSCALL_EXIT("writen path"  , notused, writen(clientSocket, path, msgDim),              "write path" ,   "");
+            SYSCALL_EXIT("writen value" , notused, writen(clientSocket, &sommatoria, sizeof(long)), "write value" ,  "");
 
             UNLOCK(lockSocket);
 
             free(path);
-            // path = NULL;
         }
 
     }
@@ -261,7 +226,7 @@ void *workerpool_thread(void *arg) {
 */
 int push(threadpool_t *threadpool, char* data){
     if(threadpool == NULL) {
-        errno = EINVAL;
+        perror("push data in threadpool");
         return -1;
     }
     //prendo la lock 
@@ -281,23 +246,24 @@ int push(threadpool_t *threadpool, char* data){
         threadpool->queue_length++;
     }
 
-    SIGNAL(threadpool->cond_qEmpty); //segnalo che la coda non e' vuota 
+    SIGNAL(threadpool->cond_qEmpty);    //segnalo che la coda non e' vuota 
     UNLOCK_RETURN(threadpool->lock,-1); // rilascio la lock 
 
     return 0;
 }
 
 /*
-funzione che si occupa di estrarre un elemento dalla coda concorrente,
-NON si occupa della gestione della lock, 
-e' una funzione che deve essere eseguita quando si e' gia' in possesso della lock
-retval== data oppure NULL in caso di errore 
+* funzione che si occupa di estrarre un elemento dalla coda concorrente,
+* NON si occupa della gestione della lock, 
+* e' una funzione che deve essere eseguita quando si e' gia' in possesso della lock
+* retval== data oppure NULL in caso di errore 
 */
 char* pop(threadpool_t *threadpool){
     if(threadpool == NULL) {
-        errno = EINVAL;
+        perror("pop");
         return NULL;
     }
+
     char *data = threadpool ->queue[threadpool->head];
     threadpool->queue[threadpool->head] = NULL;
     threadpool->head = (threadpool->head+1) % threadpool-> queue_size;
@@ -306,7 +272,10 @@ char* pop(threadpool_t *threadpool){
     return data;
 }
 
-//ok
+/* 
+* funzione che si occupa di leggere il contenuto dell’intero file il cui nome
+* ha ricevuto in input(filepath) e di effettuare un calcolo sugli elementi letti
+*/
 long calcola(char* filePath){
     long sum = 0, i = 0, dato;
     FILE *fp = NULL;
@@ -316,9 +285,9 @@ long calcola(char* filePath){
         return -1;
     }
 
-    // printf("i numeri sono :");
     rewind(fp);
 
+    // printf("i numeri sono :");
     while(fread(&dato, sizeof(long), 1, fp) == 1){
         // printf(" %ld ", dato);
         sum += (dato*i);
