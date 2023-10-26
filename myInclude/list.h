@@ -9,7 +9,7 @@ struct nodo {
 typedef struct nodo *lista;
 
 
-//struttura di un semplice nodo che rappresenta un elemento della lista ordinata Finale 
+//struttura di un semplice nodo che rappresenta un elemento della lista ordinata Finale che si trova nel Collector
 struct nodoF {
 	long result; 		//valore della sommatoria 
 	char* path;			//pathname di un file
@@ -20,7 +20,7 @@ typedef struct nodoF *listaF;
 void deleteLista(lista *);
 void deleteListaF(listaF *);
 
-void inserisciCodaLista(lista *, char* );
+void inserisciCodaLista(lista *, char* ); //not used
 lista inserisciTestaLista(lista, char* );
 
 

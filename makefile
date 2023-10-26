@@ -19,8 +19,7 @@ EXE 		= farm
 # aggiungere qui altri targets
 TARGETS		= farm generafile
 
-
-#phony target
+# phony target
 .PHONY: all clean cleanall test
 .SUFFIXES: .c .h
 
@@ -40,20 +39,22 @@ generafile: ./generafile.c
 all		: $(TARGETS)
 
 clean 	:
-	@ -rm *.o ./farm.sck 
-# 	\rm -f ./farm.sck
-# clean		: 
-# 	rm -f $(TARGETS)
+	@ -rm -f *.o ./farm.sck 
 
 cleanall	: clean
-	rm -f *.o *~ *.a ./farm.sck  
+	\rm -f *~ *.a *.dat *.txt generafile $(TARGETS) -r testdir 
 
+# comando utilizzato per eseguire il processo in 5 modi diversi
 test: generafile farm
 	./test.sh
 
-
+# comando utilizzato per testare la gestione dei segnali
 # test: farm
-# 	@valgrind --leak-check=full --track-origins=yes ./$(EXE) -d ./dat -n 3 -q 5
+# 	./$(EXE) file* -d testdir -n 4 -q 2 -t 4000
+
+###############################################################################################
+#comandi utilizzati durante lo sviluppo del progetto
+# 	@valgrind --leak-check=full --track-origins=yes ./$(EXE) file* -d testdir -n 4 -q 2 -t 400
 # 	make clean
 # 	@valgrind --leak-check=full ./$(EXE) -d ./dat -n 3
 # 	./$(EXE) -d ./dat -n 3

@@ -14,31 +14,34 @@ void deleteLista(lista *head){
 	}
 }//end deleteLista
 
-void inserisciCodaLista(lista *pl, char* stringa) {
+lista inserisciTestaLista(lista root, char* stringa){
 	lista t;
 	int lenght = strlen(stringa);
 
-	if(*pl==NULL) {//lista vuota
-		*pl=malloc(sizeof(struct nodo));
-		(*pl)->path=malloc(1+sizeof(char)*lenght);
-		(*pl)->next=NULL;
-		strcpy((*pl)->path, stringa);
-		return;
-	}
-	//lista con almeno un nodo
-	t=*pl;
-	while(t->next!=NULL) //scorro
-	t=t->next;
-	/* qui t punta all'ultima struttura della lista: ne
-	creo una nuova e sposto il puntatore in avanti */
-	t->next=malloc(sizeof(struct nodo));
-	t=t->next;
-
-	t->path=malloc(1+sizeof(char)*lenght);
-	t->next=NULL;
+	t = malloc(sizeof(struct nodo));
+	t -> path=malloc(1+sizeof(char)*lenght);
+	t -> next = root;
 
 	strcpy(t->path, stringa);
-}//end inserisciCodaLista
+
+	return t;
+}
+
+
+void stampaLista(lista l) {
+	lista s;
+	s=l;
+	while(s!=NULL) {
+		int dim = strlen(s->path);
+		printf("-> %s (dim = %d)  ", s->path, dim);
+		s = s-> next;
+		printf("\n");
+	}
+	printf("->NULL\n");
+	fprintf(stdout, "-----------------------\n");
+}//end stampaLista
+
+
 
 void listaOrdinata(lista *head, char* stringa){
 	int lenght = strlen(stringa);
@@ -64,33 +67,19 @@ void listaOrdinata(lista *head, char* stringa){
 	}
 }//listaOrdinata
 
-void stampaLista(lista l) {
-	lista s;
-	s=l;
-	while(s!=NULL) {
-		int dim = strlen(s->path);
-		printf("-> %s (dim = %d)  ", s->path, dim);
-		s = s-> next;
-		printf("\n");
+
+// -----------------------------------------------
+
+void deleteListaF(listaF *head){
+	listaF next_elem = NULL;
+
+	while(*head != NULL){
+		next_elem = (*head)->next;
+		free((*head)->path);
+		free(*head);
+		*head = next_elem;
 	}
-	printf("->NULL\n");
-	fprintf(stdout, "-----------------------\n");
-}//end stampaLista
-
-lista inserisciTestaLista(lista root, char* stringa){
-	lista t;
-	int lenght = strlen(stringa);
-
-	t = malloc(sizeof(struct nodo));
-	t -> path=malloc(1+sizeof(char)*lenght);
-	t -> next = root;
-
-	strcpy(t->path, stringa);
-
-	return t;
-}
-
-long longcmp(long a, long b){	return a-b;	}
+}//end deleteLista
 
 void inserisciOrdina(listaF *head, long value, char* stringa){
 	int lenght = strlen(stringa) +1; //+ '\0'
@@ -119,6 +108,8 @@ void inserisciOrdina(listaF *head, long value, char* stringa){
 	}
 }//listaOrdinata
 
+long longcmp(long a, long b){	return a-b;	}
+
 void stampaListaF(listaF l){
 	while(l!=NULL) {
 		printf("%ld\t%s\n", l->result, l->path);
@@ -127,13 +118,31 @@ void stampaListaF(listaF l){
 	// printf("->NULL\n");
 }
 
-void deleteListaF(listaF *head){
-	listaF next_elem = NULL;
+// -----------------------------------------------
 
-	while(*head != NULL){
-		next_elem = (*head)->next;
-		free((*head)->path);
-		free(*head);
-		*head = next_elem;
+//not used
+void inserisciCodaLista(lista *pl, char* stringa) {
+	lista t;
+	int lenght = strlen(stringa);
+
+	if(*pl==NULL) {//lista vuota
+		*pl=malloc(sizeof(struct nodo));
+		(*pl)->path=malloc(1+sizeof(char)*lenght);
+		(*pl)->next=NULL;
+		strcpy((*pl)->path, stringa);
+		return;
 	}
-}//end deleteLista
+	//lista con almeno un nodo
+	t=*pl;
+	while(t->next!=NULL) //scorro
+	t=t->next;
+	/* qui t punta all'ultima struttura della lista: ne
+	creo una nuova e sposto il puntatore in avanti */
+	t->next=malloc(sizeof(struct nodo));
+	t=t->next;
+
+	t->path=malloc(1+sizeof(char)*lenght);
+	t->next=NULL;
+
+	strcpy(t->path, stringa);
+}//end inserisciCodaLista

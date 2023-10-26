@@ -1,27 +1,35 @@
 #include <master.h>
-// segnali
 #include <time.h>
+
 #define MASTER printf("[MASTER] ");
 
 // -----VARIABILI GLOBALI----------
 int clientSocket;//clientSocket = fd che puo' essere utilizzato per I/O
 pthread_mutex_t lockSocket = PTHREAD_MUTEX_INITIALIZER;
 
-int terminaCodaFlag    = 0;//segnala di non inserire altro in coda 
-int terminaGestoreFlag = 0;//segnala al master che il gestore e' stato terminato da un segnale e non e' necessara la kill 
-int stampaFlag         = 0;//segnala ai thread di lanciare un messaggio di stampa
+int endProtocolFlag   = 0; //segnala di non inserire altro in coda 
+int endSighandlerFlag = 0; //segnala al master che il gestore e' stato terminato da un segnale e non e' necessara la kill 
+int stampaFlag        = 0; //segnala ai thread di inviare un messaggio di stampa al collector
 
 //threadpool.c
 threadpool_t *pool;
-// -END VARIABILI GLOBALI----------
+// ----END VARIABILI GLOBALI----------
 
+//-----funzioni chiamate tramite atexit() ---------------
+/*
+The atexit() function registers the given function to be called at nor‐
+mal process termination. Functions so registered are called in the reverse order
+of their registration.
+*/
 void closeClientSocket(){
     int notused;
     SYSCALL_EXIT("close", notused, close(clientSocket), "close", "");
 }
 
+//-----END funzioni chiamate tramite atexit() ---------------
+
 void openClientSocket(){
-    //stabilisco la connessione tramite una socket 
+    //creo la socket 
     int notused;
     SYSCALL_EXIT("socket", clientSocket, socket(AF_UNIX, SOCK_STREAM, 0), "socket", "");
     atexit(closeClientSocket);
@@ -61,18 +69,20 @@ int myConnect(int clientSocket, const struct sockaddr* sa_server, socklen_t addr
 void pushList(lista *listaFileBinari){
     lista tmp = NULL;
     
-    while (*listaFileBinari != NULL && terminaCodaFlag == 0){
+    while (*listaFileBinari != NULL && endProtocolFlag == 0){
 
         if (push(pool, (*listaFileBinari)->path) == -1){ //pusho un file 
             perror("PUSH");
             exit(EXIT_FAILURE);
         }
-        
-        nanosleep(&(pool->delay), NULL); //aspetto
 
+        //aspetto
+        nanosleep(&(pool->delay), NULL);
+           
         //elimino dalla lista il nodo che contiene il file appena processato 
         tmp = (*listaFileBinari)->next;
         free(*listaFileBinari);
+        
         //vado avanti
         *listaFileBinari = tmp;
     }

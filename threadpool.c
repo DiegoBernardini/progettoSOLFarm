@@ -6,7 +6,7 @@
 #define DEBUG printf("DEBUG\n");
 
 //flag dichiarati in master.c
-int terminaCodaFlag;
+int endProtocolFlag;
 int stampaFlag;
 
 int clientSocket;
@@ -22,22 +22,23 @@ threadpool_t *createThreadPool(int nthreads, int qSize, int delay) {
 
     // condizioni iniziali 
     pool->numthreads        = 0;
-    pool->taskonthefly      = 0;
-    pool->queue_size        = qSize; //TODO qSize-1 
+    pool->numthreadsAttivi  = 0;
+    pool->queue_size        = qSize; 
     pool->head = pool->tail = 0;
 
-    pool->queue_length = 0; //aggiunto
+    pool->queue_length = 0; 
 
     pool->delay.tv_sec  = delay / 1000;
     pool->delay.tv_nsec = (delay % 1000) *1000000;
 
-    /* Allocate thread and task queue */
+    // alloco spazio per i thread worker
     pool->threads = (pthread_t *)malloc(sizeof(pthread_t) * nthreads);
     if (pool->threads == NULL) {
        free(pool);
        return NULL;
     }
 
+    //creo la coda condivisa dei task
     pool->queue = (char**)malloc(sizeof(char*) *(qSize));
     if (pool->queue == NULL) {
         free(pool);
@@ -79,14 +80,14 @@ threadpool_t *createThreadPool(int nthreads, int qSize, int delay) {
     for(int i = 0; i < nthreads; i++) {
         if((errno = pthread_create(&(pool->threads[i]), NULL, workerpool_thread, (void*)pool)) != 0) {
          // errore fatale, libero tutto forzando l'uscita dei threads 
-            terminaCodaFlag = 1; 
+            endProtocolFlag = 1; 
             destroyThreadPool();
             return NULL;
         }
     }
 
     pool->numthreads   = nthreads;
-    pool->taskonthefly = nthreads; //numero di thread attivi
+    pool->numthreadsAttivi = nthreads;
 
     atexit(destroyThreadPool);
     
@@ -149,23 +150,23 @@ void *workerpool_thread(void *arg) {
         LOCK(myPool->lock); //prendo la lock
 
         //attendo di ricevere un messaggio oppure il flag di terminazione  
-        while(myPool->queue_length == 0 && terminaCodaFlag == 0){
+        while(myPool->queue_length == 0 && endProtocolFlag == 0){
             //coda vuota 
             WAIT(myPool->cond_qEmpty, myPool->lock);//aspetto
         }
 
-        if(myPool->queue_length == 0 && terminaCodaFlag == 1){
+        if(myPool->queue_length == 0 && endProtocolFlag == 1){
             //coda vuota, siamo in fase di terminazione, devo uscire
             //l'ultimo thread in vita manda il messaggio di terminazione
-            if(myPool->taskonthefly == 1){
+            if(myPool->numthreadsAttivi == 1){
                 msgDim = -1;
                 LOCK(lockSocket);
                 // Invio al collector '-1'
-                SYSCALL_EXIT("writen terminaCodaFlag", notused, writen(clientSocket, &msgDim, sizeof(int)), "write terminaCodaFlag" , "");
+                SYSCALL_EXIT("writen endProtocolFlag", notused, writen(clientSocket, &msgDim, sizeof(int)), "write endProtocolFlag" , "");
                 UNLOCK(lockSocket);
             }
 
-            myPool->taskonthefly--;
+            myPool->numthreadsAttivi--;
             //se e' colpa del signal handler
             SIGNAL(myPool->cond_qFull);
 
@@ -233,20 +234,21 @@ int push(threadpool_t *threadpool, char* data){
     LOCK_RETURN(threadpool->lock, -1);
 
     // printf("sto pushando '%s' dim queue '%d'\n", data, threadpool->queue_length);
-    while(threadpool->queue_length == threadpool->queue_size && terminaCodaFlag != 1){
+    // printf("[worker] sto pushando '%s'\n", data);
+    while(threadpool->queue_length == threadpool->queue_size && endProtocolFlag != 1){
         // coda piena
         // printf("la push si e' bloccata sulla WAIT perche' la coda e' piena \n");
         WAIT(threadpool->cond_qFull, threadpool->lock);//aspetto
     }
 
     //aggiorno i puntatori 
-       if(terminaCodaFlag != 1){
+       if(endProtocolFlag != 1){
         threadpool->queue[threadpool->tail] = data;
         threadpool->tail = (threadpool->tail+1) % threadpool-> queue_size;
         threadpool->queue_length++;
     }
 
-    SIGNAL(threadpool->cond_qEmpty);    //segnalo che la coda non e' vuota 
+    SIGNAL(threadpool->cond_qEmpty);    // segnalo che la coda non e' vuota 
     UNLOCK_RETURN(threadpool->lock,-1); // rilascio la lock 
 
     return 0;

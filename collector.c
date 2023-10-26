@@ -59,7 +59,7 @@ void openServerSocket (){
 } //END openServerSocket
 
 
-void leggi(){
+void runCollector(){
     int msgDim = 0;
     long sommatoria  = 0;
     char* nomeFile   = NULL;
@@ -103,6 +103,7 @@ void leggi(){
         else{
 
             if(msgDim == -2){ //messaggio di stampa
+                printf("[collector] Stampo i risultati ottenuti fino a questo momento:\n");
                 free(nomeFile);
                 stampaListaF(orderedList);
             }

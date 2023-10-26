@@ -16,6 +16,6 @@ void cancellaSocketFile();  // unlink
 void chiudiConnessione();	// close
 void closeServerSocket();	// close 
 
-void leggi();
+void runCollector();
 
 #endif /* COLLECTOR_H */
