@@ -20,7 +20,6 @@ typedef struct nodoF *listaF;
 void deleteLista(lista *);
 void deleteListaF(listaF *);
 
-void inserisciCodaLista(lista *, char* ); //not used
 lista inserisciTestaLista(lista, char* );
 
 

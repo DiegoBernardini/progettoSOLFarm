@@ -16,11 +16,13 @@ mal process termination. Functions so registered are called in the reverse order
 of their registration.
 */
 void cancellaSocketFile(){  unlink(SOCKNAME);   } 
+
 //chiude tramite file descriptor (listenfd)
 void closeServerSocket(){
     int notused;
     SYSCALL_EXIT("close", notused, close(listenfd), "close", "");
 }
+
 //chiude tramite file descriptor (connfd)
 void chiudiConnessione(){
     int notused;

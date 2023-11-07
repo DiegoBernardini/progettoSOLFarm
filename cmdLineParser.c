@@ -102,14 +102,6 @@ void exploreDir(const char nomedir[], lista *lista_file, char* pathRelativo) {
 	    // se e' un file regolare
 	    else if(S_ISREG(statbuf.st_mode)){
 	    	// printf("FILE REGOLARE: filenameAbs= %s, file->d_name=%s\n, pathRelativo=%s\n", filenameAbs, file->d_name, pathRelativo);
-	    	
-	    	/*le righe seguenti sono state commentate per superare i test, 
-	    	* dato che facevano uso del path assoluto dei file
-	    	*/
-	    	// *lista_file = inserisciTestaLista(*lista_file, filenameAbs);
-	    	//inserisciCodaLista(lista_file, filenameAbs);
-			//listaOrdinata(lista_file, filenameAbs);
-
 	    	*lista_file = inserisciTestaLista(*lista_file, filenameRel);
 		}
 	}
@@ -214,17 +206,6 @@ int cmdParse(int argc, char* argv[], flag* options){
 			perror("eseguendo la stat");
 			print_error("Errore nel file %s (non verra' considerato)\n", argv[i]);
 	    }else if(S_ISREG(statbuf.st_mode)){
-	    	/*le righe successive sono state commentate per superare i test 
-	    	 *in quanto sfruttavano il percorso assoluto del file
-	    	 */ 
-	  		
-	  		// (path,"/",          LUNGHEZZA_STRINGHE-1);
-	  		// strncat(path, argv[i],     LUNGHEZZA_STRINGHE-1);
-
-			//inserisciCodaLista(&(options->l),path);
-			// options->l = inserisciTestaLista(options->l, path);
-	    	//listaOrdinata( &(options->l), path);
-			
 			options->l = inserisciTestaLista(options->l, argv[i]);
 	    }
 		free(path);

@@ -133,19 +133,6 @@ void *workerpool_thread(void *arg) {
     int msgDim;
     int notused;
 
-    //-----utilizzata per la fase di test 
-    // pthread_t self = pthread_self();
-    // int myid = -1;
-    // while(myid < 0){
-    //     for (int i=0;i<myPool->numthreads;++i)
-    //     if (pthread_equal(myPool->threads[i], self)) {
-    //         myid = i;
-    //         printf("Creato thread n.%d\n", myid);
-    //         break;
-    //     }
-    // } 
-    //--------------------
-
     while(1){
         LOCK(myPool->lock); //prendo la lock
 
@@ -167,12 +154,12 @@ void *workerpool_thread(void *arg) {
             }
 
             myPool->numthreadsAttivi--;
-            //se e' colpa del signal handler
+
             SIGNAL(myPool->cond_qFull);
 
             UNLOCK(myPool->lock)
 
-            return NULL; // pthread exit
+            return NULL; 
         }
 
         // messaggio di stampa 
@@ -216,7 +203,7 @@ void *workerpool_thread(void *arg) {
     }
     UNLOCK(myPool->lock);
 
-    return NULL; //pthread exit
+    return NULL;
 }
 
 

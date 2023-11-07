@@ -28,19 +28,10 @@ listaF orderedList;
 //threadpool.c
 threadpool_t *pool;
 
-// int clientSocket;			//variabili utilizzate per inviare messaggi di prova tra processi 
-// pthread_mutex_t lockSocket;	//variabili utilizzate per inviare messaggi di prova tra processi 
-
 //------FUNZIONI------------------
-
-// funzione utilizzata per testare se la connessione tra i due processi tramite socket e' stata stabilita correttamente
-// void inviaMessaggioDiProva();
-
 void mascheraSegnali();
  
 void *sigHandlerF(void *arg);// funzione eseguita dal signal handler thread
-
-
 //-----funzioni chiamate tramite atexit() ---------------
 /*
 The atexit() function registers the given function to be called at nor‐
@@ -94,29 +85,17 @@ int main(int argc, char* argv[]){
 
 	CHECK_EQ_EXIT("cmdParse", cmdParse(argc, argv, &flagSystem), -1, "cmdParse","");
 
-    // ------operazioni di stampa per test -------------------
-	// MASTER printf("num workers 'n'=%d\nlength 'q'=%d\ntime 't'=%d\n", flagSystem.n, flagSystem.q, flagSystem.t);
-	// MASTER printf("***Stampo lista***\n");
-	// stampaLista(flagSystem.l);
-	// deleteLista(&flagSystem.l);
-	// printf("cancello lista\n\n");
-	// stampaLista(flagSystem.l);
-	//--------------------------------------------------------
-
 	// 3 -> Creazione threadPool 
 	CHECK_EQ_EXIT("createThreadPool", pool = createThreadPool(flagSystem.n, flagSystem.q, flagSystem.t), NULL, "createThreadPool", "");
 
 	// 4 -> apro connessione tramite socket 
  	openClientSocket();
 
-	// A QUESTO PUNTO E' TUTTO SETTATO CORRETTAMENTE 
-
- 	// inviaMessaggioDiProva();
-
-	// inserisco nella coda concorrente la lista dei file ottenuti dal parsing (flagSystem.l)
+	// a questo punto e' tutto settato correttamente e inserisco nella coda concorrente
+	// la lista dei file ottenuti dal parsing (flagSystem.l)
 	pushList(&flagSystem.l);
  	
- 	//SE VA TUTTO BENE E NON ARRIVANO SEGNALI, INIZIO IL PROTOCOLLO DI TERMINAZIONE 
+ 	//inizio il protocollo di terminazione  
  	
  	//ottengo lock 
 	LOCK(pool->lock);
@@ -149,6 +128,7 @@ int main(int argc, char* argv[]){
 	return 0;
 }
 
+
 //------------IMPLEMENTAZIONI FUNZIONI------------
 /*
 * funzione con cui vado a mascherare i segnali
@@ -175,7 +155,6 @@ void mascheraSegnali(){
     CHECK_NEQ_EXIT("pthread_sigmask", pthread_sigmask(SIG_BLOCK, &mask,NULL), 0, "pthread_sigmask", ""); 
     // SIG_BLOCK = or di mask e la vecchia signal mask 
 }
-
 
 /* 
 * funzione eseguita dal signal handler thread: permette di attendere in modo sincrono tramite sigwait.
@@ -210,40 +189,3 @@ void *sigHandlerF(void *arg) {
     }	   
    return NULL;	   
 }
-
-/*
-void inviaMessaggioDiProva(){  
-	char* path1 = "messaggio di prova1";
-	char* path2 = "messaggio di prova2";
-	// char* path3 = "messaggio di prova3";
-	int notused;
-	long sommatoria = 30;
-	int msgDim = strlen(path1);
-    msgDim= msgDim+1; // '\0'
-    
-    LOCK(lockSocket);
-
-    SYSCALL_EXIT("writen msgDim", notused, writen(clientSocket, &msgDim, sizeof(int)), "write msgDim" , "");
-    // printf("scritto %d sulla socket\n", msgDim);
-    SYSCALL_EXIT("writen path", notused, writen(clientSocket, path1, msgDim), "write path" , "");
-    // printf("scritto %s sulla socket\n", path1);
-	SYSCALL_EXIT("writen long", notused, writen(clientSocket, &sommatoria, sizeof(long)), "write long" , "");
-    // printf("scritto %ld sulla socket\n", sommatoria);
-
-	msgDim = strlen(path2);
-    sommatoria = 40;
-
-    SYSCALL_EXIT("writen msgDim", notused, writen(clientSocket, &msgDim, sizeof(int)), "write msgDim" , "");
-    // printf("scritto %d sulla socket\n", msgDim);
-    SYSCALL_EXIT("writen path", notused, writen(clientSocket, path2, msgDim), "write path" , "");
-    // printf("scritto %s sulla socket\n", path2);
-	SYSCALL_EXIT("writen long", notused, writen(clientSocket, &sommatoria, sizeof(long)), "write long" , "");
-    // printf("scritto %ld sulla socket\n", sommatoria);
-
-    msgDim = -1;
-
-    SYSCALL_EXIT("writen msgDim", notused, writen(clientSocket, &msgDim, sizeof(int)), "write msgDim" , "");
-    // printf("scritto %d sulla socket\n", msgDim);
-    UNLOCK(lockSocket); 
-}
-*/

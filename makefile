@@ -51,11 +51,3 @@ test: generafile farm
 # comando utilizzato per testare la gestione dei segnali
 # test: farm
 # 	./$(EXE) file* -d testdir -n 4 -q 2 -t 4000
-
-###############################################################################################
-#comandi utilizzati durante lo sviluppo del progetto
-# 	@valgrind --leak-check=full --track-origins=yes ./$(EXE) file* -d testdir -n 4 -q 2 -t 400
-# 	make clean
-# 	@valgrind --leak-check=full ./$(EXE) -d ./dat -n 3
-# 	./$(EXE) -d ./dat -n 3
-# 	@ps -A -ostat,pid,ppid | grep Z 

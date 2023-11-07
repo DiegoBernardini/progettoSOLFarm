@@ -25,7 +25,6 @@ void closeClientSocket(){
     int notused;
     SYSCALL_EXIT("close", notused, close(clientSocket), "close", "");
 }
-
 //-----END funzioni chiamate tramite atexit() ---------------
 
 void openClientSocket(){
@@ -41,7 +40,9 @@ void openClientSocket(){
 
     SYSCALL_EXIT("connect", notused, myConnect(clientSocket, (struct sockaddr*)&sa_server, sizeof(sa_server)), "connect", "");
     //connessione stabilita
-	// MASTER printf("connesso al collector\n"); 
+
+	// MASTER printf("connesso al collector\n");
+     
 }//END openClientConnection
 
 
