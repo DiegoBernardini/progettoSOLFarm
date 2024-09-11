@@ -74,7 +74,7 @@ void runCollector(){
         }
         // COLLECTOR printf("ricevuto msgDim == %d\n", msgDim);
         
-        if(msgDim > 0){ //indica la dimensione del messaggio ed esclude la stampa e la terminazione forzata
+        if(msgDim >= 0){ //indica la dimensione del messaggio ed esclude la stampa e la terminazione forzata
             
             //creazione array di supporto per inserire la stringa che mi verra' inviata 
             if((nomeFile = (char*) malloc(sizeof(char)*BUFSIZE)) == NULL){
